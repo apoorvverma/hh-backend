@@ -6,7 +6,13 @@ export class WaitlistController {
 
   joinWaitlist = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { email } = req.body;
+      if (!req.body) {
+        res.status(400).json({ success: false, message: 'Request body is required' });
+        return;
+      }
+      console.log(req.body);
+      
+      const { email, firstName, lastName, city } = req.body;
 
       // Validate email
       if (!email || typeof email !== 'string') {
@@ -21,7 +27,22 @@ export class WaitlistController {
         return;
       }
 
-      const result = await this.waitlistService.addToWaitlist(email);
+      if (!firstName || typeof firstName !== 'string') {
+        res.status(400).json({ success: false, message: 'Valid first name/initial is required' });
+        return;
+      }
+
+      if (!lastName || typeof lastName !== 'string') {
+        res.status(400).json({ success: false, message: 'Valid last name/initial is required' });
+        return;
+      }
+
+      if (!city || typeof city !== 'string') {
+        res.status(400).json({ success: false, message: 'Valid city is required' });
+        return;
+      }
+
+      const result = await this.waitlistService.addToWaitlist(email, firstName, lastName, city);
       
       if (result === 'Email already on waitlist') {
         res.status(200).json({ 

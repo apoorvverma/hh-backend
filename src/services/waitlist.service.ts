@@ -4,10 +4,13 @@ import { WaitlistEntry } from '../models/waitlist.model';
 export class WaitlistService {
   private collection = 'waitlist';
 
-  async addToWaitlist(email: string): Promise<string> {
+  async addToWaitlist(email: string, firstName: string, lastName: string, city: string): Promise<string> {
     try {
       const entry: WaitlistEntry = {
         email: email.toLowerCase().trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        city: city.trim(),
         joinedAt: new Date()
       };
 

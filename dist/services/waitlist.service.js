@@ -6,10 +6,13 @@ class WaitlistService {
     constructor() {
         this.collection = 'waitlist';
     }
-    async addToWaitlist(email) {
+    async addToWaitlist(email, firstName, lastName, city) {
         try {
             const entry = {
                 email: email.toLowerCase().trim(),
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                city: city.trim(),
                 joinedAt: new Date()
             };
             // Check if email already exists
