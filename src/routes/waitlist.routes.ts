@@ -5,5 +5,6 @@ const router = Router();
 const waitlistController = new WaitlistController();
 
 router.post('/join', waitlistController.joinWaitlist);
+router.get('/get-waitlist-registrations', waitlistController.getWaitlistUsers);
 
 export default router;

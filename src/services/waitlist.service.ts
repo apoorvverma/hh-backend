@@ -30,5 +30,30 @@ export class WaitlistService {
       console.error('Error adding to waitlist:', error);
       throw new Error('Failed to add to waitlist');
     }
+
+  }
+
+  async getAllWaitlistUsers(): Promise<WaitlistEntry[]> {
+    try {
+      const snapshot = await db.collection(this.collection).orderBy('joinedAt', 'desc').get();
+      const users: WaitlistEntry[] = [];
+      
+      snapshot.forEach((doc: any) => {
+        const userData = doc.data();
+        users.push({
+          id: doc.id,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          city: userData.city,
+          joinedAt: userData.joinedAt.toDate()
+        } as WaitlistEntry);
+      });
+      
+      return users;
+    } catch (error) {
+      console.error('Error fetching waitlist users:', error);
+      throw new Error('Failed to fetch waitlist users');
+    }
   }
 }
