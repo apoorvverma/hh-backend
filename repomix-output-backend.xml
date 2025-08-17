@@ -1,0 +1,1123 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+api/index.ts
+package.json
+src/config/firebase.ts
+src/controllers/match.controller.ts
+src/controllers/request.controller.ts
+src/controllers/ride.controller.ts
+src/controllers/user.controller.ts
+src/controllers/waitlist.controller.ts
+src/index.ts
+src/models/request.model.ts
+src/models/ride.model.ts
+src/models/user.model.ts
+src/models/waitlist.model.ts
+src/routes/index.ts
+src/routes/match.routes.ts
+src/routes/request.routes.ts
+src/routes/ride.routes.ts
+src/routes/user.routes.ts
+src/routes/waitlist.routes.ts
+src/server.ts
+src/services/match.service.ts
+src/services/request.service.ts
+src/services/ride.service.ts
+src/services/user.service.ts
+src/services/waitlist.service.ts
+src/utils/geoutils.ts
+tsconfig.json
+vercel.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/controllers/match.controller.ts">
+// src/controllers/match.controller.ts
+import { Request, Response } from "express";
+import * as matchSvc from "../services/match.service";
+
+export async function riderMatches(req: Request, res: Response): Promise<void> {
+  console.log(`API Called: GET /api/matches/rider/${req.params.requestId}`);
+  const { requestId } = req.params;
+  const matches = await matchSvc.getDriverMatchesForRider(requestId);
+  if (matches === null) {
+    res.status(404).json({ error: "Request not found" });
+    return;
+  }
+  res.json(matches);
+}
+
+export async function driverMatches(req: Request, res: Response): Promise<void> {
+  console.log(`API Called: GET /api/matches/driver/${req.params.rideId}`);
+  const { rideId } = req.params;
+  const matches = await matchSvc.getRiderMatchesForDriver(rideId);
+  if (matches === null) {
+    res.status(404).json({ error: "Ride not found" });
+    return;
+  }
+  res.json(matches);
+}
+</file>
+
+<file path="src/controllers/request.controller.ts">
+// src/controllers/request.controller.ts
+import { Request, Response } from "express";
+import * as reqSvc from "../services/request.service";
+
+export async function createRequest(req: Request, res: Response): Promise<void> {
+  console.log("API Called: POST /api/requests");
+  const { riderId, origin, destination } = req.body;
+  if (
+    !riderId ||
+    !origin?.lat ||
+    !origin?.lng ||
+    !destination?.lat ||
+    !destination?.lng
+  ) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+  try {
+    const requestId = await reqSvc.postRequest(riderId, origin, destination);
+    res.status(201).json({ requestId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Unable to create request" });
+  }
+}
+
+export async function getRequest(req: Request, res: Response): Promise<void> {
+  console.log(`API Called: GET /api/requests/${req.params.requestId}`);
+  const { requestId } = req.params;
+  const request = await reqSvc.fetchRequest(requestId);
+  if (!request) {
+    res.status(404).json({ error: "Request not found" });
+    return;
+  }
+  res.json(request);
+}
+
+export async function listRequests(_req: Request, res: Response): Promise<void> {
+  console.log("API Called: GET /api/requests");
+  const requests = await reqSvc.fetchAllRequests();
+  res.json(requests);
+}
+
+export async function nearbyRequests(req: Request, res: Response): Promise<void> {
+  console.log(`API Called: GET /api/requests/nearby?lat=${req.query.lat}&lng=${req.query.lng}&radius=${req.query.radius || 5000}`);
+  const { lat, lng } = req.query;
+  const radius = Number(req.query.radius) || 5000;
+  if (!lat || !lng) {
+    res.status(400).json({ error: "lat & lng query params required" });
+    return;
+  }
+  const requests = await reqSvc.findRequestsNearby(
+    Number(lat),
+    Number(lng),
+    radius
+  );
+  res.json(requests);
+}
+</file>
+
+<file path="src/controllers/ride.controller.ts">
+// src/controllers/ride.controller.ts
+import { Request, Response } from "express";
+import * as rideService from "../services/ride.service";
+
+export async function createRide(req: Request, res: Response): Promise<void> {
+  console.log("API Called: POST /api/rides");
+  const { driverId, origin, destination } = req.body;
+  if (
+    !driverId ||
+    !origin?.lat ||
+    !origin?.lng ||
+    !destination?.lat ||
+    !destination?.lng
+  ) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+  try {
+    const rideId = await rideService.postRide(driverId, origin, destination);
+    res.status(201).json({ rideId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Unable to create ride" });
+  }
+}
+
+export async function getRide(req: Request, res: Response): Promise<void> {
+  console.log(`API Called: GET /api/rides/${req.params.rideId}`);
+  const { rideId } = req.params;
+  const ride = await rideService.fetchRide(rideId);
+  if (!ride) {
+    res.status(404).json({ error: "Ride not found" });
+    return;
+  }
+  res.json(ride);
+}
+
+export async function listRides(req: Request, res: Response): Promise<void> {
+  console.log("API Called: GET /api/rides");
+  const rides = await rideService.fetchAllRides();
+  res.json(rides);
+}
+
+export async function nearbyRides(req: Request, res: Response): Promise<void> {
+  console.log(`API Called: GET /api/rides/nearby?lat=${req.query.lat}&lng=${req.query.lng}&radius=${req.query.radius || 5000}`);
+  const { lat, lng } = req.query;
+  const radius = Number(req.query.radius) || 5000;
+  if (!lat || !lng) {
+    res.status(400).json({ error: "lat & lng query params required" });
+    return;
+  }
+  const rides = await rideService.findRidesNearby(
+    Number(lat),
+    Number(lng),
+    radius
+  );
+  res.json(rides);
+}
+</file>
+
+<file path="src/controllers/user.controller.ts">
+import { Request, Response } from "express";
+import * as userService from "../services/user.service";
+
+export async function register(req: Request, res: Response): Promise<void> {
+  const { userId, displayName, role } = req.body;
+  if (
+    !userId ||
+    !displayName ||
+    (role !== "driver" && role !== "rider")
+  ) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+
+  try {
+    await userService.registerUser(userId, displayName, role);
+    res.status(201).json({ userId, displayName, role });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to register user" });
+  }
+}
+</file>
+
+<file path="src/models/request.model.ts">
+// src/models/request.model.ts
+import { db } from "../config/firebase";
+import admin from "firebase-admin";
+
+export interface RequestRecord {
+  riderId: string;
+  origin: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+  createdAt: admin.firestore.Timestamp;
+}
+
+const COLLECTION = "rideRequests";
+
+export async function createRequest(
+  record: Omit<RequestRecord, "createdAt">
+) {
+  const docRef = db.collection(COLLECTION).doc();
+  await docRef.set({
+    ...record,
+    createdAt: admin.firestore.Timestamp.now(),
+  });
+  return docRef.id;
+}
+
+export async function getRequestById(requestId: string) {
+  const snap = await db.collection(COLLECTION).doc(requestId).get();
+  if (!snap.exists) return null;
+  return { id: snap.id, ...(snap.data() as RequestRecord) };
+}
+
+export async function listAllRequests() {
+  const snap = await db.collection(COLLECTION).get();
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as RequestRecord) }));
+}
+</file>
+
+<file path="src/models/ride.model.ts">
+// src/models/ride.model.ts
+import { db } from "../config/firebase";
+import admin from "firebase-admin";
+
+export interface RideRecord {
+  driverId: string;
+  origin: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+  createdAt: admin.firestore.Timestamp;
+}
+
+const COLLECTION = "driverRides";
+
+export async function createRide(record: Omit<RideRecord, "createdAt">) {
+  const docRef = db.collection(COLLECTION).doc();
+  await docRef.set({
+    ...record,
+    createdAt: admin.firestore.Timestamp.now(),
+  });
+  return docRef.id;
+}
+
+export async function getRideById(rideId: string) {
+  const snap = await db.collection(COLLECTION).doc(rideId).get();
+  if (!snap.exists) return null;
+  return { id: snap.id, ...(snap.data() as RideRecord) };
+}
+
+export async function listAllRides() {
+  const snap = await db.collection(COLLECTION).get();
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as RideRecord) }));
+}
+</file>
+
+<file path="src/models/user.model.ts">
+import { db } from "../config/firebase";
+
+export interface Location {
+  latitude: number;
+  longitude: number;
+  lastUpdated: Date;
+}
+
+export interface UserRecord {
+  displayName: string;
+  role: "driver" | "rider";
+  location?: Location;
+}
+
+const COLLECTION = "users";
+
+export async function createUser(
+  userId: string,
+  record: UserRecord
+): Promise<void> {
+  await db.collection(COLLECTION).doc(userId).set(record);
+}
+
+export async function getUser(
+  userId: string
+): Promise<(UserRecord & { id: string }) | null> {
+  const snap = await db.collection(COLLECTION).doc(userId).get();
+  if (!snap.exists) return null;
+  return { id: snap.id, ...(snap.data() as UserRecord) };
+}
+
+export async function findNearbyUsers(
+  center: { latitude: number; longitude: number },
+  radiusInKm: number,
+  limit: number = 10
+): Promise<Array<UserRecord & { id: string; distance: number }>> {
+  // This is a simplified implementation that does a full collection scan
+  // For production, consider using Geohashing or a dedicated geospatial database
+  const usersSnapshot = await db.collection(COLLECTION).get();
+  
+  const users: Array<UserRecord & { id: string; distance: number }> = [];
+  
+  usersSnapshot.forEach(doc => {
+    const userData = doc.data() as UserRecord;
+    if (userData.location) {
+      const distance = calculateDistance(
+        center.latitude,
+        center.longitude,
+        userData.location.latitude,
+        userData.location.longitude
+      );
+      
+      if (distance <= radiusInKm) {
+        users.push({
+          id: doc.id,
+          ...userData,
+          distance
+        });
+      }
+    }
+  });
+  
+  // Sort by distance and limit results
+  return users
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, limit);
+}
+
+// Helper function to calculate distance between two points using Haversine formula
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+}
+
+function toRad(degrees: number): number {
+  return degrees * (Math.PI / 180);
+}
+</file>
+
+<file path="src/routes/match.routes.ts">
+// src/routes/match.routes.ts
+import { Router } from "express";
+import * as matchCtrl from "../controllers/match.controller";
+
+const router = Router();
+
+// GET  /api/matches/rider/:requestId
+router.get("/rider/:requestId", matchCtrl.riderMatches);
+
+// GET  /api/matches/driver/:rideId
+router.get("/driver/:rideId", matchCtrl.driverMatches);
+
+export default router;
+</file>
+
+<file path="src/routes/request.routes.ts">
+// src/routes/request.routes.ts
+import { Router } from "express";
+import * as reqCtrl from "../controllers/request.controller";
+
+const router = Router();
+
+router.post("/", reqCtrl.createRequest);
+router.get("/", reqCtrl.listRequests);
+router.get("/nearby", reqCtrl.nearbyRequests);
+router.get("/:requestId", reqCtrl.getRequest);
+
+export default router;
+</file>
+
+<file path="src/routes/ride.routes.ts">
+// src/routes/ride.routes.ts
+import { Router } from "express";
+import * as rideCtrl from "../controllers/ride.controller";
+
+const router = Router();
+
+// POST   /api/rides
+router.post("/", rideCtrl.createRide);
+
+// GET    /api/rides
+router.get("/", rideCtrl.listRides);
+
+// GET    /api/rides/nearby?lat=...&lng=...&radius=...
+router.get("/nearby", rideCtrl.nearbyRides);
+
+// GET    /api/rides/:rideId
+router.get("/:rideId", rideCtrl.getRide);
+
+export default router;
+</file>
+
+<file path="src/routes/user.routes.ts">
+import { Router } from "express";
+import * as userCtrl from "../controllers/user.controller";
+
+const router = Router();
+
+// POST /api/auth/register
+router.post("/register", userCtrl.register);
+
+export default router;
+</file>
+
+<file path="src/services/match.service.ts">
+// src/services/match.service.ts
+import * as rideModel from "../models/ride.model";
+import * as reqModel  from "../models/request.model";
+import { findRidesNearby }    from "./ride.service";
+import { findRequestsNearby } from "./request.service";
+
+const DEFAULT_RADIUS = 5000;
+
+export async function getDriverMatchesForRider(requestId: string, radius = DEFAULT_RADIUS) {
+  const req = await reqModel.getRequestById(requestId);
+  if (!req) return null;
+  // find driver rides near rider’s origin
+  return findRidesNearby(req.origin.lat, req.origin.lng, radius);
+}
+
+export async function getRiderMatchesForDriver(rideId: string, radius = DEFAULT_RADIUS) {
+  const ride = await rideModel.getRideById(rideId);
+  if (!ride) return null;
+  // find ride requests near driver’s origin
+  return findRequestsNearby(ride.origin.lat, ride.origin.lng, radius);
+}
+</file>
+
+<file path="src/services/request.service.ts">
+// src/services/request.service.ts
+import * as requestModel from "../models/request.model";
+import { getDistance } from "../utils/geoutils";
+
+export async function postRequest(
+  riderId: string,
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number }
+) {
+  return requestModel.createRequest({ riderId, origin, destination });
+}
+
+export async function fetchRequest(requestId: string) {
+  return requestModel.getRequestById(requestId);
+}
+
+export async function fetchAllRequests() {
+  return requestModel.listAllRequests();
+}
+
+export async function findRequestsNearby(
+  lat: number,
+  lng: number,
+  radiusMeters: number
+) {
+  const requests = await requestModel.listAllRequests();
+  return requests.filter((r) =>
+    getDistance(r.origin.lat, r.origin.lng, lat, lng) <= radiusMeters
+  );
+}
+</file>
+
+<file path="src/services/ride.service.ts">
+// src/services/ride.service.ts
+import * as rideModel from "../models/ride.model";
+import { getDistance } from "../utils/geoutils";
+
+export async function postRide(
+  driverId: string,
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number }
+) {
+  return rideModel.createRide({ driverId, origin, destination });
+}
+
+export async function fetchRide(rideId: string) {
+  return rideModel.getRideById(rideId);
+}
+
+export async function fetchAllRides() {
+  return rideModel.listAllRides();
+}
+
+/**
+ * Very simple “find nearby” for MVP:
+ * scan all rides, filter by distance between their origin & given point
+ */
+export async function findRidesNearby(
+  lat: number,
+  lng: number,
+  radiusMeters: number
+) {
+  const rides = await rideModel.listAllRides();
+  return rides.filter((r) =>
+    getDistance(r.origin.lat, r.origin.lng, lat, lng) <= radiusMeters
+  );
+}
+</file>
+
+<file path="src/services/user.service.ts">
+import * as userModel from "../models/user.model";
+
+export async function registerUser(
+  userId: string,
+  displayName: string,
+  role: "driver" | "rider"
+) {
+  // you could add extra business logic/validation here
+  return userModel.createUser(userId, { displayName, role });
+}
+
+export async function fetchUser(userId: string) {
+  return userModel.getUser(userId);
+}
+
+export async function findNearbyUsers(
+  latitude: number,
+  longitude: number,
+  radiusInKm: number = 5, // Default 5km radius
+  limit: number = 10
+) {
+  // Input validation
+  if (isNaN(latitude) || isNaN(longitude) || isNaN(radiusInKm) || isNaN(limit)) {
+    throw new Error("Invalid input parameters");
+  }
+  
+  if (radiusInKm <= 0 || limit <= 0) {
+    throw new Error("Radius and limit must be positive numbers");
+  }
+  
+  return userModel.findNearbyUsers(
+    { latitude, longitude },
+    radiusInKm,
+    limit
+  );
+}
+</file>
+
+<file path="src/utils/geoutils.ts">
+// src/utils/geoutils.ts
+export function getDistance(
+    lat1: number, lon1: number,
+    lat2: number, lon2: number
+  ): number {
+    const toRad = (v: number) => (v * Math.PI) / 180;
+    const R = 6371000;  // Earth radius in meters
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+</file>
+
+<file path="api/index.ts">
+import express, { Application } from 'express';
+import cors from 'cors';
+import routes from '../src/routes';
+
+const app: Application = express();
+const port = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api', routes);
+
+app.get('/test3', (_req, res) => {
+  res.send('Hello 3 World!');
+});
+
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+});
+
+module.exports = app;
+</file>
+
+<file path="src/config/firebase.ts">
+import * as admin from 'firebase-admin';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
+// Initialize Firebase Admin with your service account
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  }),
+  databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
+});
+
+// Export Firestore instance
+export const db = admin.firestore();
+export default admin;
+</file>
+
+<file path="src/routes/index.ts">
+import { Router } from 'express';
+import waitlistRoutes from './waitlist.routes';
+import userRoutes from "./user.routes";
+import rideRoutes from './ride.routes';
+import requestRoutes from './request.routes';
+import matchRoutes from './match.routes';
+
+const router = Router();
+
+router.use('/api/waitlist', waitlistRoutes);
+router.use("/api/auth", userRoutes);
+router.use("/api/rides", rideRoutes);
+router.use("/api/requests", requestRoutes);
+router.use("/api/matches",  matchRoutes);
+
+export default router;
+</file>
+
+<file path="src/server.ts">
+// src/server.ts
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+import { getDistance } from "./utils/geoutils";
+
+dotenv.config();
+const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: { origin: process.env.FRONTEND_ORIGIN ?? "*", methods: ["GET", "POST"] }
+});
+
+// In-memory store of connected sockets
+interface UserSocketData {
+  userId: string;
+  role: "driver" | "rider";
+  lat: number;
+  lng: number;
+}
+const connectedUsers = new Map<string, UserSocketData>();
+
+// Radius in meters (default 5000 = 5 km)
+const MATCH_RADIUS = Number(process.env.SOCKET_RADIUS) || 5000;
+
+io.on("connection", (socket) => {
+  console.log(`↔️  Socket connected: ${socket.id}`);
+
+  // 1. Register the user (must be sent right after connecting)
+  socket.on("user:register", (data: {
+    userId: string;
+    role: "driver" | "rider";
+    lat: number;
+    lng: number;
+  }) => {
+    const { userId, role, lat, lng } = data;
+    connectedUsers.set(socket.id, { userId, role, lat, lng });
+    // Join the opposite room so broadcasts go to riders ↔ drivers
+    const targetRoom = role === "driver" ? "riders" : "drivers";
+    socket.join(targetRoom);
+  });
+
+  // 2. On every location update: update store, then broadcast to nearby
+  socket.on("location:update", (coords: { lat: number; lng: number }) => {
+    const user = connectedUsers.get(socket.id);
+    if (!user) return;
+
+    user.lat = coords.lat;
+    user.lng = coords.lng;
+
+    // Broadcast this user’s new position to everyone of the opposite role
+    const oppositeRole = user.role === "driver" ? "rider" : "driver";
+    for (const [otherSocketId, other] of connectedUsers.entries()) {
+      if (other.role !== oppositeRole) continue;
+
+      const dist = getDistance(user.lat, user.lng, other.lat, other.lng);
+      if (dist <= MATCH_RADIUS) {
+        io.to(otherSocketId).emit("user:location", {
+          userId: user.userId,
+          lat:  user.lat,
+          lng:  user.lng,
+        });
+      }
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`❌ Socket disconnected: ${socket.id}`);
+    connectedUsers.delete(socket.id);
+  });
+});
+
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server listening on port ${PORT}`);
+});
+</file>
+
+<file path="tsconfig.json">
+{
+    "compilerOptions": {
+      "target": "ES2020",
+      "module": "commonjs",
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules"]
+  }
+</file>
+
+<file path="vercel.json">
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/index.js",
+      "use": "@vercel/node",
+      "config": { "includeFiles": ["dist/**"] }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/index.js"
+    }
+  ]
+}
+</file>
+
+<file path=".gitignore">
+/node_modules
+.env
+.vercel
+</file>
+
+<file path="package.json">
+{
+  "name": "hh-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec ts-node src/index.ts",
+    "lint": "eslint 'src/**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts'",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "ts-check": "tsc --project tsconfig.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.3.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.14.1",
+    "@types/socket.io": "^3.0.2",
+    "eslint": "^9.24.0",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
+</file>
+
+<file path="src/index.ts">
+// src/index.ts
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+import routes from "./routes";
+import { getDistance } from "./utils/geoutils";
+import cors from "cors";
+
+dotenv.config();
+
+// ─── Express App ──────────────────────────────────────────────────────────────
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(routes);
+
+// ─── HTTP & Socket.IO Server ─────────────────────────────────────────────────
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_ORIGIN ?? "*",
+    methods: ["GET", "POST"],
+  },
+});
+
+// ─── In-memory Socket Store ───────────────────────────────────────────────────
+interface UserSocketData {
+  userId: string;
+  role: "driver" | "rider";
+  lat: number;
+  lng: number;
+}
+const connectedUsers = new Map<string, UserSocketData>();
+
+// radius for “nearby” in meters (env override or default 5 km)
+const MATCH_RADIUS = Number(process.env.SOCKET_RADIUS) || 5000;
+
+// ─── Socket Handlers ─────────────────────────────────────────────────────────
+io.on("connection", (socket) => {
+  console.log(`↔️  Socket connected: ${socket.id}`);
+
+  // 1) client must immediately register
+  socket.on(
+    "user:register",
+    (data: { userId: string; role: "driver" | "rider"; lat: number; lng: number }) => {
+      const { userId, role, lat, lng } = data;
+      connectedUsers.set(socket.id, { userId, role, lat, lng });
+      // join opposite-room: drivers → riders, riders → drivers
+      const room = role === "driver" ? "riders" : "drivers";
+      socket.join(room);
+      console.log(`   ┗ Registered ${userId} as ${role}`);
+    }
+  );
+
+  // 2) on location updates broadcast to nearby opposite-role sockets
+  socket.on("location:update", (coords: { lat: number; lng: number }) => {
+    const user = connectedUsers.get(socket.id);
+    if (!user) return;
+
+    user.lat = coords.lat;
+    user.lng = coords.lng;
+
+    const targetRole = user.role === "driver" ? "rider" : "driver";
+    for (const [otherId, other] of connectedUsers.entries()) {
+      if (other.role !== targetRole) continue;
+      const dist = getDistance(user.lat, user.lng, other.lat, other.lng);
+      if (dist <= MATCH_RADIUS) {
+        io.to(otherId).emit("user:location", {
+          userId: user.userId,
+          lat: user.lat,
+          lng: user.lng,
+        });
+      }
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`❌ Socket disconnected: ${socket.id}`);
+    connectedUsers.delete(socket.id);
+  });
+});
+
+// ─── Start Server ────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+});
+</file>
+
+<file path="src/models/waitlist.model.ts">
+export interface WaitlistEntry {
+    email: string;
+    firstName: string;
+    lastName: string;
+    city: string;
+    joinedAt: Date;
+}
+</file>
+
+<file path="src/routes/waitlist.routes.ts">
+import { Router } from 'express';
+import { WaitlistController } from '../controllers/waitlist.controller';
+
+const router = Router();
+const waitlistController = new WaitlistController();
+
+router.post('/join', waitlistController.joinWaitlist);
+router.get('/get-waitlist-registrations', waitlistController.getWaitlistUsers);
+
+export default router;
+</file>
+
+<file path="src/controllers/waitlist.controller.ts">
+import { Request, Response } from 'express';
+import { WaitlistService } from '../services/waitlist.service';
+
+export class WaitlistController {
+  private waitlistService = new WaitlistService();
+
+  joinWaitlist = async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.body) {
+        res.status(400).json({ success: false, message: 'Request body is required' });
+        return;
+      }
+      console.log(req.body);
+      
+      const { email, firstName, lastName, city } = req.body;
+
+      // Validate email
+      if (!email || typeof email !== 'string') {
+        res.status(400).json({ success: false, message: 'Valid email is required' });
+        return;
+      }
+
+      // Simple email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ success: false, message: 'Invalid email format' });
+        return;
+      }
+
+      if (!firstName || typeof firstName !== 'string') {
+        res.status(400).json({ success: false, message: 'Valid first name/initial is required' });
+        return;
+      }
+
+      if (!lastName || typeof lastName !== 'string') {
+        res.status(400).json({ success: false, message: 'Valid last name/initial is required' });
+        return;
+      }
+
+      if (!city || typeof city !== 'string') {
+        res.status(400).json({ success: false, message: 'Valid city is required' });
+        return;
+      }
+
+      const result = await this.waitlistService.addToWaitlist(email, firstName, lastName, city);
+      
+      if (result === 'Email already on waitlist') {
+        res.status(200).json({ 
+          success: true, 
+          message: 'You are already on our waitlist!' 
+        });
+        return;
+      }
+
+      res.status(201).json({ 
+        success: true, 
+        message: 'Successfully joined the waitlist!',
+        id: result
+      });
+    } catch (error) {
+      console.error('Waitlist join error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to join waitlist. Please try again later.' 
+      });
+    }
+  };
+
+  getWaitlistUsers = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const users = await this.waitlistService.getAllWaitlistUsers();
+      res.status(200).json({
+        success: true,
+        data: users,
+        count: users.length
+      });
+    } catch (error) {
+      console.error('Error fetching waitlist users:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch waitlist users',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  };
+}
+</file>
+
+<file path="src/services/waitlist.service.ts">
+import { db } from '../config/firebase';
+import { WaitlistEntry } from '../models/waitlist.model';
+
+export class WaitlistService {
+  private collection = 'waitlist';
+
+  async addToWaitlist(email: string, firstName: string, lastName: string, city: string): Promise<string> {
+    try {
+      const entry: WaitlistEntry = {
+        email: email.toLowerCase().trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        city: city.trim(),
+        joinedAt: new Date()
+      };
+
+      // Check if email already exists
+      const snapshot = await db.collection(this.collection)
+        .where('email', '==', entry.email)
+        .get();
+
+      if (!snapshot.empty) {
+        return 'Email already on waitlist';
+      }
+
+      // Add to waitlist
+      const docRef = await db.collection(this.collection).add(entry);
+      return docRef.id;
+    } catch (error) {
+      console.error('Error adding to waitlist:', error);
+      throw new Error('Failed to add to waitlist');
+    }
+
+  }
+
+  async getAllWaitlistUsers(): Promise<WaitlistEntry[]> {
+    try {
+      const snapshot = await db.collection(this.collection).orderBy('joinedAt', 'desc').get();
+      const users: WaitlistEntry[] = [];
+      
+      snapshot.forEach((doc: any) => {
+        const userData = doc.data();
+        users.push({
+          id: doc.id,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          city: userData.city,
+          joinedAt: userData.joinedAt.toDate()
+        } as WaitlistEntry);
+      });
+      
+      return users;
+    } catch (error) {
+      console.error('Error fetching waitlist users:', error);
+      throw new Error('Failed to fetch waitlist users');
+    }
+  }
+}
+</file>
+
+</files>
