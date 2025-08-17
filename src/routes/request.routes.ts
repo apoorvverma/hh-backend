@@ -1,12 +1,22 @@
-// src/routes/request.routes.ts
+// @ts-nocheck
+
 import { Router } from "express";
-import * as reqCtrl from "../controllers/request.controller";
+import { requireUser } from "../middleware/requireUser";
+import {
+  createRideRequest,
+  listMyRequests,
+  cancelRideRequest,
+} from "../controllers/request.controller";
 
-const router = Router();
+const r = Router();
 
-router.post("/", reqCtrl.createRequest);
-router.get("/", reqCtrl.listRequests);
-router.get("/nearby", reqCtrl.nearbyRequests);
-router.get("/:requestId", reqCtrl.getRequest);
+// Rider creates a request
+r.post("/", requireUser, createRideRequest);
 
-export default router;
+// Rider lists their own requests
+r.get("/", requireUser, listMyRequests);
+
+// Rider cancels their request
+r.post("/:id/cancel", requireUser, cancelRideRequest);
+
+export default r;

@@ -1,19 +1,13 @@
-// src/routes/ride.routes.ts
+
+// @ts-nocheck
+
 import { Router } from "express";
-import * as rideCtrl from "../controllers/ride.controller";
+import { requireUser } from "../middleware/requireUser";
+import { driverAcceptRequest, listMyRides, updateRideStatus } from "../controllers/ride.controller";
 
-const router = Router();
+const r = Router();
+r.post("/accept/:id", requireUser, driverAcceptRequest);
+r.post("/:id/status", requireUser, updateRideStatus);
+r.get("/", requireUser, listMyRides);
 
-// POST   /api/rides
-router.post("/", rideCtrl.createRide);
-
-// GET    /api/rides
-router.get("/", rideCtrl.listRides);
-
-// GET    /api/rides/nearby?lat=...&lng=...&radius=...
-router.get("/nearby", rideCtrl.nearbyRides);
-
-// GET    /api/rides/:rideId
-router.get("/:rideId", rideCtrl.getRide);
-
-export default router;
+export default r;

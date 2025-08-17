@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+
 import * as userModel from "../models/user.model";
 
 export async function registerUser(

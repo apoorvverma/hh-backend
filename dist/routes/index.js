@@ -5,6 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const waitlist_routes_1 = __importDefault(require("./waitlist.routes"));
+const ride_routes_1 = __importDefault(require("./ride.routes"));
+const request_routes_1 = __importDefault(require("./request.routes"));
+// import matchRoutes from './match.routes';
+const auth_routes_1 = __importDefault(require("./auth.routes"));
 const router = (0, express_1.Router)();
-router.use('/waitlist', waitlist_routes_1.default);
+router.use('/api/waitlist', waitlist_routes_1.default);
+// router.use("/api/auth", userRoutes);
+router.use("/api/rides", ride_routes_1.default);
+router.use("/api/requests", request_routes_1.default);
+// router.use("/api/matches",  matchRoutes);
+router.use("/api/auth", auth_routes_1.default);
 exports.default = router;

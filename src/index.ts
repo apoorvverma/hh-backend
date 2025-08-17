@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import routes from "./routes";
 import { getDistance } from "./utils/geoutils";
 import cors from "cors";
+import { initSockets } from "./realtime/socket";
 
 dotenv.config();
 
@@ -17,7 +18,9 @@ app.use(routes);
 
 // ─── HTTP & Socket.IO Server ─────────────────────────────────────────────────
 const server = http.createServer(app);
-const io = new Server(server, {
+initSockets(server);
+
+/* const io = new Server(server, {
   cors: {
     origin: process.env.FRONTEND_ORIGIN ?? "*",
     methods: ["GET", "POST"],
@@ -79,7 +82,7 @@ io.on("connection", (socket) => {
     console.log(`❌ Socket disconnected: ${socket.id}`);
     connectedUsers.delete(socket.id);
   });
-});
+}); */
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;

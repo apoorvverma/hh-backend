@@ -31,5 +31,27 @@ class WaitlistService {
             throw new Error('Failed to add to waitlist');
         }
     }
+    async getAllWaitlistUsers() {
+        try {
+            const snapshot = await firebase_1.db.collection(this.collection).orderBy('joinedAt', 'desc').get();
+            const users = [];
+            snapshot.forEach((doc) => {
+                const userData = doc.data();
+                users.push({
+                    id: doc.id,
+                    email: userData.email,
+                    firstName: userData.firstName,
+                    lastName: userData.lastName,
+                    city: userData.city,
+                    joinedAt: userData.joinedAt.toDate()
+                });
+            });
+            return users;
+        }
+        catch (error) {
+            console.error('Error fetching waitlist users:', error);
+            throw new Error('Failed to fetch waitlist users');
+        }
+    }
 }
 exports.WaitlistService = WaitlistService;
