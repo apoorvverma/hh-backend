@@ -1,49 +1,79 @@
-import express from 'express';
-import { createServer } from 'http';
-import { Server, Socket } from 'socket.io';
+/* // src/server.ts
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+import { getDistance } from "./utils/geoutils";
 
+dotenv.config();
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: { origin: '*' }
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: { origin: process.env.FRONTEND_ORIGIN ?? "*", methods: ["GET", "POST"] }
 });
 
-type UserLocation = {
+// In-memory store of connected sockets
+interface UserSocketData {
   userId: string;
-  username: string;
-  coords: { latitude: number; longitude: number };
-  socketId: string;
-};
+  role: "driver" | "rider";
+  lat: number;
+  lng: number;
+}
+const connectedUsers = new Map<string, UserSocketData>();
 
-let onlineUsers: Record<string, UserLocation> = {};
+// Radius in meters (default 5000 = 5 km)
+const MATCH_RADIUS = Number(process.env.SOCKET_RADIUS) || 5000;
 
-// Handle socket connections
-io.on('connection', (socket: Socket) => {
-  // User comes online and shares their info
-  socket.on('user:online', (data: { userId: string; username: string; coords: { latitude: number; longitude: number } }) => {
-    onlineUsers[socket.id] = {
-      ...data,
-      socketId: socket.id
-    };
-    // Notify all clients of the updated user list
-    io.emit('users:update', Object.values(onlineUsers));
+io.on("connection", (socket) => {
+  console.log(`↔️  Socket connected: ${socket.id}`);
+
+  // 1. Register the user (must be sent right after connecting)
+  socket.on("user:register", (data: {
+    userId: string;
+    role: "driver" | "rider";
+    lat: number;
+    lng: number;
+  }) => {
+    const { userId, role, lat, lng } = data;
+    connectedUsers.set(socket.id, { userId, role, lat, lng });
+    // Join the opposite room so broadcasts go to riders ↔ drivers
+    const targetRoom = role === "driver" ? "riders" : "drivers";
+    socket.join(targetRoom);
   });
 
-  // User updates their location
-  socket.on('user:move', (coords: { latitude: number; longitude: number }) => {
-    if (onlineUsers[socket.id]) {
-      onlineUsers[socket.id].coords = coords;
-      io.emit('users:update', Object.values(onlineUsers));
+  // 2. On every location update: update store, then broadcast to nearby
+  socket.on("location:update", (coords: { lat: number; lng: number }) => {
+    const user = connectedUsers.get(socket.id);
+    if (!user) return;
+
+    user.lat = coords.lat;
+    user.lng = coords.lng;
+
+    // Broadcast this user’s new position to everyone of the opposite role
+    const oppositeRole = user.role === "driver" ? "rider" : "driver";
+    for (const [otherSocketId, other] of connectedUsers.entries()) {
+      if (other.role !== oppositeRole) continue;
+
+      const dist = getDistance(user.lat, user.lng, other.lat, other.lng);
+      if (dist <= MATCH_RADIUS) {
+        io.to(otherSocketId).emit("user:location", {
+          userId: user.userId,
+          lat:  user.lat,
+          lng:  user.lng,
+        });
+      }
     }
   });
 
-  // User disconnects
-  socket.on('disconnect', () => {
-    delete onlineUsers[socket.id];
-    io.emit('users:update', Object.values(onlineUsers));
+  socket.on("disconnect", () => {
+    console.log(`❌ Socket disconnected: ${socket.id}`);
+    connectedUsers.delete(socket.id);
   });
 });
 
-httpServer.listen(3000, () => {
-  console.log('Server running on port 3000');
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server listening on port ${PORT}`);
 });
+ */
