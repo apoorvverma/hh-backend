@@ -8,6 +8,10 @@ import authRoutes from "./auth.routes";
 
 const router = Router();
 
+router.use('/api/test-route-1', (req, res) => {
+    res.send("Hello from test route 1!");
+});
+
 router.use('/api/waitlist', waitlistRoutes);
 // router.use("/api/auth", userRoutes);
 router.use("/api/rides", rideRoutes);
