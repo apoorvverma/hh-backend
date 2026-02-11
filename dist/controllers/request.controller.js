@@ -11,7 +11,11 @@ async function createRideRequest(req, res) {
     const { pickup, dropoff } = req.body;
     if (!pickup || !dropoff)
         return res.status(400).json({ error: "pickup and dropoff required" });
-    const request = await (0, request_model_1.createRequest)({ riderId: req.userId, pickup, dropoff });
+    const request = await (0, request_model_1.createRequest)({
+        riderId: req.userId,
+        origin: pickup,
+        destination: dropoff,
+    });
     (0, socket_1.notifyDriversOfRequest)({
         requestId: request.id,
         riderId: req.userId,

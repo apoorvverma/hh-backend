@@ -3,10 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getRequestById = void 0;
 exports.createRequest = createRequest;
 exports.getRequest = getRequest;
 exports.cancelRequest = cancelRequest;
 exports.listRequestsByRider = listRequestsByRider;
+exports.listAllRequests = listAllRequests;
 const firebase_1 = require("../config/firebase");
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const COLLECTION = "rideRequests";
@@ -20,6 +22,8 @@ async function createRequest(input) {
     await ref.set(doc);
     return { id: ref.id, ...doc };
 }
+// Alias
+exports.getRequestById = getRequest;
 async function getRequest(id) {
     const snap = await firebase_1.db.collection(COLLECTION).doc(id).get();
     return snap.exists ? ({ id: snap.id, ...snap.data() }) : null;
@@ -45,5 +49,9 @@ async function listRequestsByRider(riderId, limit = 20) {
         .orderBy("createdAt", "desc")
         .limit(limit)
         .get();
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+async function listAllRequests(limit = 50) {
+    const snap = await firebase_1.db.collection(COLLECTION).limit(limit).get();
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }

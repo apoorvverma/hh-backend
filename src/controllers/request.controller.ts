@@ -12,7 +12,11 @@ export async function createRideRequest(req: AuthedRequest, res: Response) {
   };
   if (!pickup || !dropoff) return res.status(400).json({ error: "pickup and dropoff required" });
   
-  const request = await createRequest({ riderId: req.userId!, pickup, dropoff });
+  const request = await createRequest({
+    riderId: req.userId!,
+    origin: pickup,
+    destination: dropoff,
+  });
   
   notifyDriversOfRequest({
     requestId: request.id,

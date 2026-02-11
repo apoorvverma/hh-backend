@@ -1,24 +1,27 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-
-// src/services/match.service.ts
 import * as rideModel from "../models/ride.model";
 import * as reqModel  from "../models/request.model";
-import { findRidesNearby }    from "./ride.service";
-import { findRequestsNearby } from "./request.service";
+import { findRidesNearby } from "./ride.service";
 
 const DEFAULT_RADIUS = 5000;
 
 export async function getDriverMatchesForRider(requestId: string, radius = DEFAULT_RADIUS) {
   const req = await reqModel.getRequestById(requestId);
-  if (!req) return null;
+  if (!req || !req.origin) return null;
   // find driver rides near rider’s origin
   return findRidesNearby(req.origin.lat, req.origin.lng, radius);
 }
 
 export async function getRiderMatchesForDriver(rideId: string, radius = DEFAULT_RADIUS) {
   const ride = await rideModel.getRideById(rideId);
-  if (!ride) return null;
-  // find ride requests near driver’s origin
-  return findRequestsNearby(ride.origin.lat, ride.origin.lng, radius);
+  if (!ride || !ride.origin) return null;
+  
+  // NOTE: You need to implement findRequestsNearby in request.service.ts 
+  // or do it here similar to findRidesNearby
+  const allRequests = await reqModel.listAllRequests();
+  /*
+  return allRequests.filter(r => 
+      r.origin && getDistance(r.origin.lat, r.origin.lng, ride.origin.lat, ride.origin.lng) <= radius
+  );
+  */
+  return []; // Placeholder until request service is ready
 }

@@ -10,6 +10,9 @@ const request_routes_1 = __importDefault(require("./request.routes"));
 // import matchRoutes from './match.routes';
 const auth_routes_1 = __importDefault(require("./auth.routes"));
 const router = (0, express_1.Router)();
+router.use('/api/test-route-1', (req, res) => {
+    res.send("Hello from test route 1!");
+});
 router.use('/api/waitlist', waitlist_routes_1.default);
 // router.use("/api/auth", userRoutes);
 router.use("/api/rides", ride_routes_1.default);

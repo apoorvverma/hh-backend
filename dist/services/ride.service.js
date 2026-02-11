@@ -1,6 +1,4 @@
 "use strict";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -56,5 +54,7 @@ async function fetchAllRides() {
  */
 async function findRidesNearby(lat, lng, radiusMeters) {
     const rides = await rideModel.listAllRides();
-    return rides.filter((r) => (0, geoutils_1.getDistance)(r.origin.lat, r.origin.lng, lat, lng) <= radiusMeters);
+    return rides.filter((r) => 
+    // Ensure r.origin exists before checking distance
+    r.origin && (0, geoutils_1.getDistance)(r.origin.lat, r.origin.lng, lat, lng) <= radiusMeters);
 }

@@ -24,10 +24,12 @@ export async function driverAcceptRequest(req: AuthedRequest, res: Response): Pr
       return { riderId: cur.riderId, requestId };
     });
 
+    if (!req.userId) throw new Error("User ID missing");
+
     const created = await createOnAccept({
       requestId,
-      riderId: rideTx.riderId,
-      driverId: req.userId!,
+      riderId: rideTx.riderId as string,
+      driverId: req.userId as string,
     });
 
     // NEW: inform rider & driver
@@ -69,7 +71,11 @@ export async function updateRideStatus(req: AuthedRequest, res: Response) {
 }
 
 export async function listMyRides(req: AuthedRequest, res: Response) {
-  const role = (req.query.role as "rider" | "driver") || req.userRole!;
-  const items = await listRidesByUser(req.userId!, role, 20);
+  if (!req.userId || !req.userRole) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+  }
+  const role = (req.query.role as "rider" | "driver") || req.userRole;
+  const items = await listRidesByUser(req.userId, role, 20);
   res.json(items);
 }

@@ -188,7 +188,7 @@ function wireSocket(socket: Socket) {
 
         const ride = await createOnAccept({
           requestId: txResult.requestId,
-          riderId: txResult.riderId,
+          riderId: txResult.riderId as string,
           driverId: me.userId,
         });
 

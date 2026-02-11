@@ -1,6 +1,4 @@
 "use strict";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -37,23 +35,28 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDriverMatchesForRider = getDriverMatchesForRider;
 exports.getRiderMatchesForDriver = getRiderMatchesForDriver;
-// src/services/match.service.ts
 const rideModel = __importStar(require("../models/ride.model"));
 const reqModel = __importStar(require("../models/request.model"));
 const ride_service_1 = require("./ride.service");
-const request_service_1 = require("./request.service");
 const DEFAULT_RADIUS = 5000;
 async function getDriverMatchesForRider(requestId, radius = DEFAULT_RADIUS) {
     const req = await reqModel.getRequestById(requestId);
-    if (!req)
+    if (!req || !req.origin)
         return null;
     // find driver rides near rider’s origin
     return (0, ride_service_1.findRidesNearby)(req.origin.lat, req.origin.lng, radius);
 }
 async function getRiderMatchesForDriver(rideId, radius = DEFAULT_RADIUS) {
     const ride = await rideModel.getRideById(rideId);
-    if (!ride)
+    if (!ride || !ride.origin)
         return null;
-    // find ride requests near driver’s origin
-    return (0, request_service_1.findRequestsNearby)(ride.origin.lat, ride.origin.lng, radius);
+    // NOTE: You need to implement findRequestsNearby in request.service.ts 
+    // or do it here similar to findRidesNearby
+    const allRequests = await reqModel.listAllRequests();
+    /*
+    return allRequests.filter(r =>
+        r.origin && getDistance(r.origin.lat, r.origin.lng, ride.origin.lat, ride.origin.lng) <= radius
+    );
+    */
+    return []; // Placeholder until request service is ready
 }

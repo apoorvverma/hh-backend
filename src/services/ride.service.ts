@@ -1,6 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-
 import * as rideModel from "../models/ride.model";
 import { getDistance } from "../utils/geoutils";
 
@@ -31,6 +28,7 @@ export async function findRidesNearby(
 ) {
   const rides = await rideModel.listAllRides();
   return rides.filter((r) =>
-    getDistance(r.origin.lat, r.origin.lng, lat, lng) <= radiusMeters
+    // Ensure r.origin exists before checking distance
+    r.origin && getDistance(r.origin.lat, r.origin.lng, lat, lng) <= radiusMeters
   );
 }

@@ -24,6 +24,8 @@ async function driverAcceptRequest(req, res) {
             tx.update(requestRef, { status: "EXPIRED" });
             return { riderId: cur.riderId, requestId };
         });
+        if (!req.userId)
+            throw new Error("User ID missing");
         const created = await (0, ride_model_1.createOnAccept)({
             requestId,
             riderId: rideTx.riderId,
@@ -64,6 +66,10 @@ async function updateRideStatus(req, res) {
     res.json({ ok: true, next });
 }
 async function listMyRides(req, res) {
+    if (!req.userId || !req.userRole) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+    }
     const role = req.query.role || req.userRole;
     const items = await (0, ride_model_1.listRidesByUser)(req.userId, role, 20);
     res.json(items);
