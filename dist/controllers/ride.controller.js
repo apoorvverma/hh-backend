@@ -12,6 +12,10 @@ async function driverAcceptRequest(req, res) {
         return;
     }
     const requestId = req.params.id;
+    if (!requestId) {
+        res.status(400).json({ error: "request id required" });
+        return;
+    }
     const requestRef = firebase_1.db.collection("rideRequests").doc(requestId);
     try {
         const rideTx = await firebase_1.db.runTransaction(async (tx) => {
@@ -34,8 +38,8 @@ async function driverAcceptRequest(req, res) {
         // NEW: inform rider & driver
         (0, socket_1.notifyRideUpdate)({
             rideId: created.id,
-            riderId: created.riderId,
-            driverId: created.driverId,
+            riderId: rideTx.riderId,
+            driverId: req.userId,
             status: "ACCEPTED",
         });
         res.status(201).json(created);
@@ -56,12 +60,14 @@ async function updateRideStatus(req, res) {
     const snap = await firebase_1.db.collection("rides").doc(rideId).get();
     if (snap.exists) {
         const d = snap.data();
-        (0, socket_1.notifyRideUpdate)({
-            rideId,
-            riderId: d.riderId,
-            driverId: d.driverId,
-            status: next,
-        });
+        if (typeof d.riderId === "string" && typeof d.driverId === "string") {
+            (0, socket_1.notifyRideUpdate)({
+                rideId,
+                riderId: d.riderId,
+                driverId: d.driverId,
+                status: next,
+            });
+        }
     }
     res.json({ ok: true, next });
 }

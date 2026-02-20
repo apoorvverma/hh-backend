@@ -5,8 +5,8 @@ export type RequestStatus = "REQUESTED" | "CANCELLED" | "EXPIRED";
 
 export interface RideRequestDoc {
   riderId: string;
-  origin: { lat: number; lng: number; address?: string }; // Changed 'pickup' to 'origin' to match service usage
-  destination: { lat: number; lng: number; address?: string }; // Changed 'dropoff' to 'destination'
+  origin: { lat: number; lng: number; address?: string };
+  destination: { lat: number; lng: number; address?: string };
   status: RequestStatus;
   createdAt: admin.firestore.Timestamp;
 }
@@ -30,21 +30,12 @@ export async function createRequest(input: CreateRequestInput) {
   return { id: ref.id, ...doc };
 }
 
-// Alias
-export const getRequestById = getRequest;
-
-// Alias
-export const getRequestById = getRequest;
-
 export async function getRequest(id: string) {
   const snap = await db.collection(COLLECTION).doc(id).get();
   return snap.exists ? ({ id: snap.id, ...(snap.data() as RideRequestDoc) }) : null;
 }
 
-export async function listAllRequests(limit = 50) {
-    const snap = await db.collection(COLLECTION).limit(limit).get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as RideRequestDoc) }));
-}
+export const getRequestById = getRequest;
 
 export async function cancelRequest(id: string, byRiderId: string) {
   const ref = db.collection(COLLECTION).doc(id);
@@ -53,7 +44,7 @@ export async function cancelRequest(id: string, byRiderId: string) {
     if (!snap.exists) throw new Error("Request not found");
     const cur = snap.data() as RideRequestDoc;
     if (cur.riderId !== byRiderId) throw new Error("Not your request");
-    if (cur.status !== "REQUESTED") return; // idempotent
+    if (cur.status !== "REQUESTED") return;
     tx.update(ref, { status: "CANCELLED" });
   });
 }
@@ -69,6 +60,6 @@ export async function listRequestsByRider(riderId: string, limit = 20) {
 }
 
 export async function listAllRequests(limit = 50) {
-    const snap = await db.collection(COLLECTION).limit(limit).get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as RideRequestDoc) }));
+  const snap = await db.collection(COLLECTION).limit(limit).get();
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as RideRequestDoc) }));
 }

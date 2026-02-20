@@ -141,8 +141,8 @@ function wireSocket(socket) {
             // notify both parties
             notifyRideUpdate({
                 rideId: ride.id,
-                riderId: ride.riderId,
-                driverId: ride.driverId,
+                riderId: txResult.riderId,
+                driverId: me.userId,
                 status: "ACCEPTED",
             });
             ack?.({ ok: true, rideId: ride.id });

@@ -12,6 +12,10 @@ export async function driverAcceptRequest(req: AuthedRequest, res: Response): Pr
   }
 
   const requestId = req.params.id;
+  if (!requestId) {
+    res.status(400).json({ error: "request id required" });
+    return;
+  }
   const requestRef = db.collection("rideRequests").doc(requestId);
 
   try {
@@ -35,8 +39,8 @@ export async function driverAcceptRequest(req: AuthedRequest, res: Response): Pr
     // NEW: inform rider & driver
     notifyRideUpdate({
       rideId: created.id,
-      riderId: created.riderId,
-      driverId: created.driverId,
+      riderId: rideTx.riderId as string,
+      driverId: req.userId,
       status: "ACCEPTED",
     });
 
@@ -59,12 +63,14 @@ export async function updateRideStatus(req: AuthedRequest, res: Response) {
   const snap = await db.collection("rides").doc(rideId).get();
   if (snap.exists) {
     const d = snap.data() as any;
-    notifyRideUpdate({
-      rideId,
-      riderId: d.riderId,
-      driverId: d.driverId,
-      status: next,
-    });
+    if (typeof d.riderId === "string" && typeof d.driverId === "string") {
+      notifyRideUpdate({
+        rideId,
+        riderId: d.riderId,
+        driverId: d.driverId,
+        status: next,
+      });
+    }
   }
 
   res.json({ ok: true, next });

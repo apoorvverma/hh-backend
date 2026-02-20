@@ -195,8 +195,8 @@ function wireSocket(socket: Socket) {
         // notify both parties
         notifyRideUpdate({
           rideId: ride.id,
-          riderId: ride.riderId,
-          driverId: ride.driverId,
+          riderId: txResult.riderId as string,
+          driverId: me.userId,
           status: "ACCEPTED",
         });
 

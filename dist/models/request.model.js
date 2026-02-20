@@ -22,12 +22,11 @@ async function createRequest(input) {
     await ref.set(doc);
     return { id: ref.id, ...doc };
 }
-// Alias
-exports.getRequestById = getRequest;
 async function getRequest(id) {
     const snap = await firebase_1.db.collection(COLLECTION).doc(id).get();
     return snap.exists ? ({ id: snap.id, ...snap.data() }) : null;
 }
+exports.getRequestById = getRequest;
 async function cancelRequest(id, byRiderId) {
     const ref = firebase_1.db.collection(COLLECTION).doc(id);
     await firebase_1.db.runTransaction(async (tx) => {
@@ -38,7 +37,7 @@ async function cancelRequest(id, byRiderId) {
         if (cur.riderId !== byRiderId)
             throw new Error("Not your request");
         if (cur.status !== "REQUESTED")
-            return; // idempotent
+            return;
         tx.update(ref, { status: "CANCELLED" });
     });
 }

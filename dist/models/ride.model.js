@@ -13,7 +13,6 @@ exports.listAllRides = listAllRides;
 const firebase_1 = require("../config/firebase");
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const COLLECTION = "rides";
-// For drivers posting a ride
 async function createRide(input) {
     const ref = firebase_1.db.collection(COLLECTION).doc();
     const now = firebase_admin_1.default.firestore.Timestamp.now();
@@ -26,20 +25,16 @@ async function createRide(input) {
     await ref.set(doc);
     return { id: ref.id, ...doc };
 }
-// Previously createOnAccept - kept for compatibility if needed, but createRide is more general
 async function createOnAccept(input) {
-    // This function might need to be refactored to UPDATE an existing ride or create a new one from a request
-    // For now, implementing as a new ride creation logic if that was the intent
     const ref = firebase_1.db.collection(COLLECTION).doc();
     const now = firebase_admin_1.default.firestore.Timestamp.now();
-    // Use dummy locations if creating purely from acceptance (though ideally we'd have them)
     const doc = {
         driverId: input.driverId,
         requestId: input.requestId,
         riderId: input.riderId,
         fareQuoted: input.fareQuoted,
-        origin: { lat: 0, lng: 0 }, // Placeholder
-        destination: { lat: 0, lng: 0 }, // Placeholder
+        origin: { lat: 0, lng: 0 },
+        destination: { lat: 0, lng: 0 },
         status: "ACCEPTED",
         createdAt: now,
         updatedAt: now,
@@ -47,12 +42,11 @@ async function createOnAccept(input) {
     await ref.set(doc);
     return { id: ref.id, ...doc };
 }
-// Alias for consistency
-exports.getRideById = getRide;
 async function getRide(id) {
     const snap = await firebase_1.db.collection(COLLECTION).doc(id).get();
     return snap.exists ? ({ id: snap.id, ...snap.data() }) : null;
 }
+exports.getRideById = getRide;
 async function updateStatus(id, next) {
     const now = firebase_admin_1.default.firestore.Timestamp.now();
     const patch = { status: next, updatedAt: now };
